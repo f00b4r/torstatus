@@ -1,0 +1,1 @@
+15 * * * * torstatus cd /srv/torstatus && perl tns_update.pl >> /tmp/torstatus.log 2>&1

@@ -1,0 +1,58 @@
+version: '3.5'
+
+services:
+  torstatus:
+    build: .
+    restart: always
+    ports:
+      # Website port
+      #- 8000:80
+
+      # Tor ports
+      - 9001:9001
+      - 9030:9030
+
+      # Tor Control port
+      #- 9051:9051
+
+    volumes:
+      # Data storage for tor
+      - ./_data/tor:/var/lib/tor
+      # Local copy of torstatus website
+      - ./torstatus:/srv/torstatus
+      # Tor node configuration
+      - ./_config/torrc:/etc/tor/torrc:ro
+      # Torstatus configuration
+      #- ./_config/torstatus.php:/srv/torstatus/web/config.php:ro
+
+    labels:
+      # Traefik configuration
+      #- "traefik.enable=true"
+      #- "traefik.http.routers.torstatus.entrypoints=http,https"
+      #- "traefik.http.routers.torstatus.rule=Host(`tor.domain.tld`)"
+      #- "traefik.http.routers.torstatus.tls=true"
+      #- "traefik.http.routers.torstatus.tls.certresolver=letsencrypt"
+      #- "traefik.http.services.torstatus.loadbalancer.server.scheme=http"
+      #- "traefik.http.services.torstatus.loadbalancer.server.port=80"
+      #- "traefik.http.services.torstatus.loadbalancer.healthcheck.interval=30"
+      #- "traefik.http.services.torstatus.loadbalancer.healthcheck.timeout=30"
+      #- "traefik.http.services.torstatus.loadbalancer.healthcheck.scheme=http"
+      #- "traefik.http.services.torstatus.loadbalancer.healthcheck.port=80"
+
+  db:
+    image: mysql:5.6
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: torstatus
+      MYSQL_USER: torstatus
+      MYSQL_PASSWORD: torstatus
+    volumes:
+      # Data storage for mysql
+      - ./_data/mysql:/var/lib/mysql
+
+  adminer:
+    image: dockette/adminer
+    restart: always
+    ports:
+      - 8888:80
