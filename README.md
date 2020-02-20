@@ -1,7 +1,7 @@
 <h1 align=center>TorStatus</h1>
 
 <p align=center>
-   🧅 TorStatus refreshed project.
+   Reboot of famous 🧅 TorStatus project.
 </p>
 
 <p align=center>
@@ -19,7 +19,7 @@ Based on awesome [torstatus.rueckgr.at](https://torstatus.rueckgr.at/) and sourc
 
 ## Usage
 
-Close this project and feel free to run your own version.
+Feel free to clone this project and run your own version.
 
 **Requirements**
 
@@ -88,7 +88,7 @@ Close this project and feel free to run your own version.
 
 See [how to contribute](https://contributte.org/contributing.html) to this package.
 
-This package is currently maintaining by these authors.
+This package is currently maintained by these authors.
 
 <a href="https://github.com/f3l1x">
     <img width="80" height="80" src="https://avatars2.githubusercontent.com/u/538058?v=3&s=80">
