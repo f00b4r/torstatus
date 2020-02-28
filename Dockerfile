@@ -60,7 +60,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
 # TOR ########################
 RUN echo "deb https://deb.torproject.org/torproject.org buster main" > /etc/apt/sources.list.d/tor.list && \
     echo "deb-src https://deb.torproject.org/torproject.org buster main" >> /etc/apt/sources.list.d/tor.list && \
-    useradd -d /var/lib/tor -s /bin/bash -u 800 torstatus && \
+    useradd -d /var/lib/tor -s /usr/bin/bash -u 800 torstatus && \
     curl https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import && \
     gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add - && \
     apt update && \
@@ -84,7 +84,7 @@ ADD ./docker/php/php-fpm.conf /etc/php/7.1/
 ADD ./docker/nginx/site.conf /etc/nginx/sites-available/default
 
 # CRON
-ADD ./docker/cron /etc/cron.d/
+ADD ./docker/cron /etc/cron.d
 
 # SUPERVISOR
 ADD ./docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
