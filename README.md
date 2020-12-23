@@ -99,5 +99,4 @@ This package is currently maintained by these authors.
 
 -----
 
-Consider to [support](https://contributte.org/partners.html) **pwnlabs** development team.
-Also thank you for using this package.
+Consider to [support](https://github.com/sponsors/f3l1x) **f3l1x**. Also thank you for using this package.
