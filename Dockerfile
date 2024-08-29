@@ -1,4 +1,4 @@
-FROM dockette/debian:buster-slim
+FROM dockette/debian:bullseye-slim
 
 # DEPS #######################
 RUN apt update && apt dist-upgrade -y
@@ -6,10 +6,9 @@ RUN apt install -y --no-install-recommends --no-install-suggests wget curl apt-t
 
 # PHP ########################
 RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg && \
-    echo "deb https://packages.sury.org/php/ buster main" > /etc/apt/sources.list.d/php.list && \
+    echo "deb https://packages.sury.org/php/ bullseye main" > /etc/apt/sources.list.d/php.list && \
     apt update && \
     apt install -y --no-install-recommends --no-install-suggests \
-        php7.1-apc \
         php7.1-apcu \
         php7.1-bz2 \
         php7.1-bcmath \
@@ -25,7 +24,6 @@ RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
         php7.1-ldap \
         php7.1-mbstring \
         php7.1-memcached \
-        php7.1-mongo \
         php7.1-mysql \
         php7.1-pdo \
         php7.1-pgsql \
@@ -59,8 +57,8 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
     libdbd-mysql-perl
 
 # TOR ########################
-RUN echo "deb https://deb.torproject.org/torproject.org buster main" > /etc/apt/sources.list.d/tor.list && \
-    echo "deb-src https://deb.torproject.org/torproject.org buster main" >> /etc/apt/sources.list.d/tor.list && \
+RUN echo "deb https://deb.torproject.org/torproject.org bullseye main" > /etc/apt/sources.list.d/tor.list && \
+    echo "deb-src https://deb.torproject.org/torproject.org bullseye main" >> /etc/apt/sources.list.d/tor.list && \
     useradd -d /var/lib/tor -s /usr/bin/bash -u 800 torstatus && \
     curl https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import && \
     gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add - && \
