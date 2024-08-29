@@ -52,6 +52,7 @@ RUN apt install -y --no-install-recommends --no-install-suggests \
     libdbi-perl \
     libgeo-ip-perl \
     libwww-perl \
+    libnet-ip-perl \
     libfile-touch-perl \
     libparallel-forkmanager-perl \
     libcache-memcached-perl \
