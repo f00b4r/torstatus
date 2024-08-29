@@ -1,7 +1,7 @@
 <?php
 
 // Copyright (c) 2006-2007, Joseph B. Kowalski
-// See LICENSE for licensing information
+// See LICENSE for licensing information 
 
 // Start new session
 @session_start() or die();

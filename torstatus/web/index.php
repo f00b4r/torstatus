@@ -1,9 +1,9 @@
-<?php 
+<?php
 
 // Copyright (c) 2006-2007, Joseph B. Kowalski
-// See LICENSE for licensing information 
+// See LICENSE for licensing information
 
-require_once('common.php');
+use lib\iputils\IpUtils;require_once('common.php');
 
 $HeaderRowString = "";
 
@@ -42,7 +42,6 @@ if ($DetermineUsingSSL == 1)
 }
 
 $Self = $_SERVER['PHP_SELF'];
-$Host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
 $forwardedFor = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : '';
 $xff = array_map( 'trim', explode( ',',$forwardedFor ) );
 $xff = array_reverse( $xff );
@@ -103,6 +102,7 @@ $country_codes = array (
 "am" => "Armenia",
 "an" => "Netherlands Antilles",
 "ao" => "Angola",
+"ap" => "Asia/Pacific Region",
 "aq" => "Antarctica",
 "ar" => "Argentina",
 "as" => "American Samoa",
@@ -353,6 +353,8 @@ $country_codes = array (
 
 );
 
+require_once(dirname(__FILE__) . '/../lib/iputils/IpUtils.php');
+
 // Function Declarations
 function IsIPInSubnet($IP,$Subnet)
 {
@@ -363,60 +365,30 @@ function IsIPInSubnet($IP,$Subnet)
 	/* always return true if subnet is wildcard */
 	if ($Subnet == '*')
 	{
-		return 1;
+		return true;
 	}
 
 	/* always return true if ip is an exact match as is */
 	if ($Subnet == $IP)
 	{
-		return 1;
+		return false;
 	}
 
 	/* always return false if only an ip was provided, and it's not an exact match */
 	if (strpos($Subnet, '/') === FALSE)
 	{
-		return 0;
+		return false;
 	}
 
-       /* get the base and the bits from the subnet */
-       list($base, $bits) = explode('/', $Subnet);
-
-       /* now split it up into it's classes */
-       list($a, $b, $c, $d) = explode('.', $base);
-
-       /* now do some bit shifting/switching to convert to ints */
-       $i = ($a << 24) + ($b << 16) + ($c << 8) + $d;
-       $mask = $bits == 0 ? 0 : (~0 << (32 - $bits));
-
-       /* here's our lowest int */
-       $low = $i & $mask;
-
-       /* here's our highest int */
-       $high = $i | (~$mask & 0xFFFFFFFF);
-
-       /* now split the ip we're checking against up into classes */
-       list($a, $b, $c, $d) = explode('.', $IP);
-
-       /* now convert the ip we're checking against to an int */
-       $check = ($a << 24) + ($b << 16) + ($c << 8) + $d;
-
-       /* if the ip is within the range, including highest/lowest values, then it's within the subnet range */
-       if ($check >= $low && $check <= $high)
-	{
-		return 1;
-	}
-       else
-	{
-		return 0;
-	}
+	return IpUtils::checkIp($IP, $Subnet);
 }
 
 function GenerateHeaderRow()
 {
-	global 	
-			$HeaderRowString, 
+	global
+			$HeaderRowString,
 			$Self,
-			$ColumnList_ACTIVE, 
+			$ColumnList_ACTIVE,
 			$SR,
 			$SO,
 			$FAuthority,
@@ -438,7 +410,7 @@ function GenerateHeaderRow()
 	$ccso = "&nbsp;<a class='header' href='$Self?SR=CountryCode&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/></a>&nbsp;&nbsp;";
 	if ($SR == 'CountryCode' && $SO == 'Asc') { $ccso = "&nbsp;<a class='header' href='$Self?SR=CountryCode&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/></a>&nbsp;&nbsp;"; }
 
-	if($SR == 'Name'){$HeaderRowString .= "<td class='HRS'>$ccso";} else{$HeaderRowString .= "<td class='HRN'>$ccso";} 
+	if($SR == 'Name'){$HeaderRowString .= "<td class='HRS'>$ccso";} else{$HeaderRowString .= "<td class='HRN'>$ccso";}
 	if ($SR == 'Name' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Name&amp;SO=Desc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";}
 	else if ($SR == 'Name' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Name&amp;SO=Asc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";}
 	else $HeaderRowString .= "<a class='header' href='$Self?SR=Name&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";
@@ -449,7 +421,7 @@ function GenerateHeaderRow()
 		switch ($value)
 		{
 			case "Fingerprint":
-   			if($SR == 'Fingerprint'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+   			if($SR == 'Fingerprint'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'Fingerprint' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Fingerprint&amp;SO=Desc'>";}
 			else if ($SR == 'Fingerprint' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Fingerprint&amp;SO=Asc'>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=Fingerprint&amp;SO=Asc'>";
@@ -457,7 +429,7 @@ function GenerateHeaderRow()
    			break;
 
 			case "Bandwidth":
-			if($SR == 'Bandwidth'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'Bandwidth'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'Bandwidth' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Bandwidth&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";}
 			else if ($SR == 'Bandwidth' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Bandwidth&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=Bandwidth&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";
@@ -465,7 +437,7 @@ function GenerateHeaderRow()
 			break;
 
 			case "Uptime":
-			if($SR == 'Uptime'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'Uptime'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'Uptime' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Uptime&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";}
 			else if ($SR == 'Uptime' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Uptime&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=Uptime&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";
@@ -473,7 +445,7 @@ function GenerateHeaderRow()
 			break;
 
 			case "LastDescriptorPublished":
-			if($SR == 'LastDescriptorPublished'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'LastDescriptorPublished'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'LastDescriptorPublished' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=LastDescriptorPublished&amp;SO=Desc'>";}
 			else if ($SR == 'LastDescriptorPublished' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=LastDescriptorPublished&amp;SO=Asc'>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=LastDescriptorPublished&amp;SO=Asc'>";
@@ -481,7 +453,7 @@ function GenerateHeaderRow()
 			break;
 
 			case "Hostname":
-			if($SR == 'Hostname'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'Hostname'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'Hostname' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Hostname&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";}
 			else if ($SR == 'Hostname' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Hostname&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=Hostname&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";
@@ -489,7 +461,7 @@ function GenerateHeaderRow()
 			break;
 
 			case "ORPort":
-			if($SR == 'ORPort'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'ORPort'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'ORPort' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=ORPort&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";}
 			else if ($SR == 'ORPort' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=ORPort&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=ORPort&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";
@@ -497,7 +469,7 @@ function GenerateHeaderRow()
 			break;
 
 			case "DirPort":
-			if($SR == 'DirPort'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'DirPort'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'DirPort' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=DirPort&amp;SO=Desc'><img src='img/sortingarrowup.png' alt='&#9652;' class='sorting'/>";}
 			else if ($SR == 'DirPort' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=DirPort&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";}
 			else $HeaderRowString .= "<a class='header' href='$Self?SR=DirPort&amp;SO=Asc'><img src='img/sortingarrowdown.png' alt='&#9662;' class='sorting'/>";
@@ -505,7 +477,7 @@ function GenerateHeaderRow()
 			break;
 
 			case "Contact":
-			if($SR == 'Contact'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";} 
+			if($SR == 'Contact'){$HeaderRowString .= "<td class='HRS'>";} else{$HeaderRowString .= "<td class='HRN'>";}
 			if ($SR == 'Contact' && $SO == 'Asc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Contact&amp;SO=Desc'>";}
 			else if ($SR == 'Contact' && $SO == 'Desc'){$HeaderRowString .= "<a class='header' href='$Self?SR=Contact&amp;SO=Asc'>";}
 			else $HeaderRowString .= "<a href='$Self?SR=Contact&amp;SO=Asc'>";
@@ -516,7 +488,7 @@ function GenerateHeaderRow()
 			if(($FBadDirectory == '0') && ($SR == 'FBadDirectory'))
 			{
 				$HeaderRowString .= "<td class='HRFNOS'>";
-			} 
+			}
 			else if(($FBadDirectory == '0') && ($SR != 'FBadDirectory'))
 			{
 				$HeaderRowString .= "<td class='HRFNO'>";
@@ -547,7 +519,7 @@ function GenerateHeaderRow()
 			if(($FBadExit == '0') && ($SR == 'FBadExit'))
 			{
 				$HeaderRowString .= "<td class='HRFNOS'>";
-			} 
+			}
 			else if(($FBadExit == '0') && ($SR != 'FBadExit'))
 			{
 				$HeaderRowString .= "<td class='HRFNO'>";
@@ -576,13 +548,13 @@ function GenerateHeaderRow()
 
 		}
 	}
-	
+
 	$HeaderRowString .= "</tr>\n";
 }
 
 function DisplayRouterRow()
 {
-	global $CurrentResultSet, $record, $ColumnList_ACTIVE, $country_codes, $notified_missing_countries, $notified_missing_flags;
+	global $CurrentResultSet, $record, $ColumnList_ACTIVE, $country_codes, $notified_missing_countries, $notified_missing_flags, $mysqli;
 	if (isset($record['BadExit']) && $record['BadExit'])
 	{
 		echo "<tr class='B'>";
@@ -647,14 +619,16 @@ function DisplayRouterRow()
 		}
 	}
 
-	if ($countrycode == "") { $countrycode = "nna"; $record['CountryCode'] = "NNA"; }
+	if ($countrycode == "" || !isset($country_codes[strtolower($record['CountryCode'])])) {
+		$countrycode = "nna"; $record['CountryCode'] = "NNA";
+	}
 	echo "<div class='flags_$countrycode' title='".$country_codes[strtolower($record['CountryCode'])]."'></div>&nbsp;";
 #	echo "<img src='img/flags/".$countrycode.".gif' class='flag' width='18px' alt='".$record['CountryCode']."' title='".$country_codes[strtolower($record['CountryCode'])]."'/>&nbsp;";
 	echo "<a href='router_detail.php?FP=" . $record['Fingerprint'] . "'>" . $record['Name'] . "</a></td>";
 
 	foreach($ColumnList_ACTIVE as $value)
 	{
-		switch (TRUE) 
+		switch (TRUE)
 		{
 			case
 			($value == "Hostname"):
@@ -831,7 +805,7 @@ function DisplayRouterRow()
 
   			case
 			(
-				$value == "Fingerprint" 		||  
+				$value == "Fingerprint" 		||
 				$value == "LastDescriptorPublished"	||
 				$value == "Contact"
 			):
@@ -841,7 +815,7 @@ function DisplayRouterRow()
 
   			case
 			(
-				$value == "BadDir" 			|| 
+				$value == "BadDir" 			||
 				$value == "BadExit"
 			):
 
@@ -850,11 +824,11 @@ function DisplayRouterRow()
 
   			case
 			($value == "Uptime"):
-			
+
 			if ($record[$value] > -1 && $record[$value] < 5*24)
 			{
 				echo "<td class='TDc'>";
-				if ($record['Running'] == 0 && $record['Hibernating'] == 0)
+				if ((!isset($record['Running']) || $record['Running'] == 0) && (!isset($record['Hibernating']) || $record['Hibernating'] == 0))
 				{
 					echo "<img src='/img/routerdown.png' alt=' router is down' title='Router is currently down'/>";
 				}
@@ -869,7 +843,7 @@ function DisplayRouterRow()
 			else if ($record[$value] >= 5*24)
 			{
 				echo "<td class='TDcb'>";
-				if ($record['Running'] == 0 && $record['Hibernating'] == 0)
+				if ((!isset($record['Running']) || $record['Running'] == 0) && (!isset($record['Hibernating']) || $record['Hibernating'] == 0))
 				{
 					echo "<img src='/img/routerdown.png' alt=' router is down' title='Router is currently down'/>";
 				}
@@ -889,7 +863,7 @@ function DisplayRouterRow()
 
   			case
 			($value == "ORPort" || $value == "DirPort"):
-			
+
 			if ($record[$value] > 0 && $record[$value] != 80 && $record[$value] != 443)
 			{
 				echo "<td class='TDc'>" . $record[$value] . "</td>";
@@ -979,14 +953,14 @@ if(
 	$SR != "FHSDir")
 {
 	$SR = "Name";
-} 
+}
 
 if(
 	$SO != "Asc"				&&
 	$SO != "Desc")
 {
 	$SO = "Asc";
-} 
+}
 
 // Read CustomSearch Field (CSField), CustomSearch Modifier (CSMod), CustomSearch Input (CSInput), and FLAGS variables -- These come from POST or SESSION
 
@@ -1225,7 +1199,7 @@ if(
 	$CSField != "Contact")
 {
 	$CSField = "Fingerprint";
-} 
+}
 
 if(
 	$CSMod != "Equals"		&&
@@ -1245,200 +1219,200 @@ if ($CSInput != null)
 }
 
 // Register variables in SESSION
-if (!isset($_SESSION['ColumnList_ACTIVE'])) 
+if (!isset($_SESSION['ColumnList_ACTIVE']))
 {
 	$_SESSION['ColumnList_ACTIVE'] = $ColumnList_ACTIVE;
-} 
+}
 else
 {
 	unset($_SESSION['ColumnList_ACTIVE']);
 	$_SESSION['ColumnList_ACTIVE'] = $ColumnList_ACTIVE;
 }
 
-if (!isset($_SESSION['ColumnList_INACTIVE'])) 
+if (!isset($_SESSION['ColumnList_INACTIVE']))
 {
 	$_SESSION['ColumnList_INACTIVE'] = $ColumnList_INACTIVE;
-} 
+}
 else
 {
 	unset($_SESSION['ColumnList_INACTIVE']);
 	$_SESSION['ColumnList_INACTIVE'] = $ColumnList_INACTIVE;
 }
 
-if (!isset($_SESSION['SR'])) 
+if (!isset($_SESSION['SR']))
 {
 	$_SESSION['SR'] = $SR;
-} 
+}
 else
 {
 	unset($_SESSION['SR']);
 	$_SESSION['SR'] = $SR;
 }
 
-if (!isset($_SESSION['SO'])) 
+if (!isset($_SESSION['SO']))
 {
 	$_SESSION['SO'] = $SO;
-} 
+}
 else
 {
 	unset($_SESSION['SO']);
 	$_SESSION['SO'] = $SO;
 }
 
-if (!isset($_SESSION['FAuthority'])) 
+if (!isset($_SESSION['FAuthority']))
 {
 	$_SESSION['FAuthority'] = $FAuthority;
-} 
+}
 else
 {
 	unset($_SESSION['FAuthority']);
 	$_SESSION['FAuthority'] = $FAuthority;
 }
 
-if (!isset($_SESSION['FBadDirectory'])) 
+if (!isset($_SESSION['FBadDirectory']))
 {
 	$_SESSION['FBadDirectory'] = $FBadDirectory;
-} 
+}
 else
 {
 	unset($_SESSION['FBadDirectory']);
 	$_SESSION['FBadDirectory'] = $FBadDirectory;
 }
 
-if (!isset($_SESSION['FBadExit'])) 
+if (!isset($_SESSION['FBadExit']))
 {
 	$_SESSION['FBadExit'] = $FBadExit;
-} 
+}
 else
 {
 	unset($_SESSION['FBadExit']);
 	$_SESSION['FBadExit'] = $FBadExit;
 }
 
-if (!isset($_SESSION['FExit'])) 
+if (!isset($_SESSION['FExit']))
 {
 	$_SESSION['FExit'] = $FExit;
-} 
+}
 else
 {
 	unset($_SESSION['FExit']);
 	$_SESSION['FExit'] = $FExit;
 }
 
-if (!isset($_SESSION['FFast'])) 
+if (!isset($_SESSION['FFast']))
 {
 	$_SESSION['FFast'] = $FFast;
-} 
+}
 else
 {
 	unset($_SESSION['FFast']);
 	$_SESSION['FFast'] = $FFast;
 }
 
-if (!isset($_SESSION['FGuard'])) 
+if (!isset($_SESSION['FGuard']))
 {
 	$_SESSION['FGuard'] = $FGuard;
-} 
+}
 else
 {
 	unset($_SESSION['FGuard']);
 	$_SESSION['FGuard'] = $FGuard;
 }
 
-if (!isset($_SESSION['FHibernating'])) 
+if (!isset($_SESSION['FHibernating']))
 {
 	$_SESSION['FHibernating'] = $FHibernating;
-} 
+}
 else
 {
 	unset($_SESSION['FHibernating']);
 	$_SESSION['FHibernating'] = $FHibernating;
 }
 
-if (!isset($_SESSION['FNamed'])) 
+if (!isset($_SESSION['FNamed']))
 {
 	$_SESSION['FNamed'] = $FNamed;
-} 
+}
 else
 {
 	unset($_SESSION['FNamed']);
 	$_SESSION['FNamed'] = $FNamed;
 }
 
-if (!isset($_SESSION['FStable'])) 
+if (!isset($_SESSION['FStable']))
 {
 	$_SESSION['FStable'] = $FStable;
-} 
+}
 else
 {
 	unset($_SESSION['FStable']);
 	$_SESSION['FStable'] = $FStable;
 }
 
-if (!isset($_SESSION['FRunning'])) 
+if (!isset($_SESSION['FRunning']))
 {
 	$_SESSION['FRunning'] = $FRunning;
-} 
+}
 else
 {
 	unset($_SESSION['FRunning']);
 	$_SESSION['FRunning'] = $FRunning;
 }
 
-if (!isset($_SESSION['FValid'])) 
+if (!isset($_SESSION['FValid']))
 {
 	$_SESSION['FValid'] = $FValid;
-} 
+}
 else
 {
 	unset($_SESSION['FValid']);
 	$_SESSION['FValid'] = $FValid;
 }
 
-if (!isset($_SESSION['FV2Dir'])) 
+if (!isset($_SESSION['FV2Dir']))
 {
 	$_SESSION['FV2Dir'] = $FV2Dir;
-} 
+}
 else
 {
 	unset($_SESSION['FV2Dir']);
 	$_SESSION['FV2Dir'] = $FV2Dir;
 }
 
-if (!isset($_SESSION['FHSDir'])) 
+if (!isset($_SESSION['FHSDir']))
 {
 	$_SESSION['FHSDir'] = $FHSDir;
-} 
+}
 else
 {
 	unset($_SESSION['FHSDir']);
 	$_SESSION['FHSDir'] = $FHSDir;
 }
 
-if (!isset($_SESSION['CSField'])) 
+if (!isset($_SESSION['CSField']))
 {
 	$_SESSION['CSField'] = $CSField;
-} 
+}
 else
 {
 	unset($_SESSION['CSField']);
 	$_SESSION['CSField'] = $CSField;
 }
 
-if (!isset($_SESSION['CSMod'])) 
+if (!isset($_SESSION['CSMod']))
 {
 	$_SESSION['CSMod'] = $CSMod;
-} 
+}
 else
 {
 	unset($_SESSION['CSMod']);
 	$_SESSION['CSMod'] = $CSMod;
 }
 
-if (!isset($_SESSION['CSInput'])) 
+if (!isset($_SESSION['CSInput']))
 {
 	$_SESSION['CSInput'] = $CSInput;
-} 
+}
 else
 {
 	unset($_SESSION['CSInput']);
@@ -1447,54 +1421,78 @@ else
 
 // Get total number of routers from database
 $query = "select count(*) as Count from $ActiveNetworkStatusTable";
-$record = db_query_single_row($query);
+$record = db_query_single_row($query, 1800);
 
 $RouterCount = $record['Count'];
 
 // Get details on Network Status Source router from the database
 $query = "select Name, IP, ORPort, DirPort, Fingerprint, Platform, LastDescriptorPublished, OnionKey, SigningKey, Contact, DescriptorSignature from NetworkStatusSource where ID = 1";
-$record = db_query_single_row($query);
+$record = db_query_single_row($query, 1800);
 
-$Name = $record['Name'];
-$IP = $record['IP'];
-$ORPort = $record['ORPort'];
-$DirPort = $record['DirPort'];
-$Fingerprint = $record['Fingerprint'];
-$Platform = $record['Platform'];
-$LastDescriptorPublished = $record['LastDescriptorPublished'];
-$OnionKey = $record['OnionKey'];
-$SigningKey = $record['SigningKey'];
-$Contact = $record['Contact'];
-$DescriptorSignature = $record['DescriptorSignature'];
+$Name = $record ? $record['Name'] : '';
+$IP = $record ? $record['IP'] : '';
+$ORPort = $record ? $record['ORPort'] : '';
+$DirPort = $record ? $record['DirPort'] : '';
+$Fingerprint = $record ? $record['Fingerprint'] : '';
+$Platform = $record ? $record['Platform'] : '';
+$LastDescriptorPublished = $record ? $record['LastDescriptorPublished'] : '';
+$OnionKey = $record ? $record['OnionKey'] : '';
+$SigningKey = $record ? $record['SigningKey'] : '';
+$Contact = $record ? $record['Contact'] : '';
+$DescriptorSignature = $record ? $record['DescriptorSignature'] : '';
 
-$query = "select Hostname, CountryCode from $ActiveNetworkStatusTable where Fingerprint = '$Fingerprint'";
-$record = db_query_single_row($query);
+if ($Fingerprint)
+{
+	$query = "select Hostname, CountryCode from $ActiveNetworkStatusTable where Fingerprint = '$Fingerprint'";
+	$record = db_query_single_row($query, 1800);
 
-$Hostname = $record['Hostname'];
-$CountryCode = $record['CountryCode'];
+	$Hostname = $record['Hostname'];
+	$CountryCode = $record['CountryCode'];
+}
 
 // Determine if client IP exists in database as a Tor server
-$query = "select count(*) as Count from $ActiveNetworkStatusTable where IP = '$RemoteIP'";
-$record = db_query_single_row($query);
+$query = "select count(*) as Count from $ActiveNetworkStatusTable where IP = '$RemoteIP' and FExit = 1";
+$record = db_query_single_row($query, 1800);
 
 $RemoteIPDBCount = $record['Count'];
 
 if ($RemoteIPDBCount > 0)
 {
-	$PositiveMatch_IP = 1;	
+	$PositiveMatch_IP = 1;
+}
+else {
+	$query = "select count(*) as Count
+		from $ActiveORAddressesTable
+			join $ActiveDescriptorTable on $ActiveDescriptorTable.ID = $ActiveORAddressesTable.descriptor_id
+			join $ActiveNetworkStatusTable on $ActiveNetworkStatusTable.Fingerprint = $ActiveDescriptorTable.Fingerprint
+		where address = '$RemoteIP'
+			and $ActiveNetworkStatusTable.FExit = 1";
+	$record = db_query_single_row($query, 1800);
+
+	$RemoteIPDBCount = $record['Count'];
+
+	if ($RemoteIPDBCount > 0)
+	{
+		$PositiveMatch_IP = 1;
+	}
 }
 
 // Get name, fingerprint, and exit policy of Tor node(s) if match was found, look for match in ExitPolicy
 if ($PositiveMatch_IP == 1)
 {
-	$query = "select $ActiveNetworkStatusTable.Name, $ActiveNetworkStatusTable.Fingerprint, $ActiveDescriptorTable.ExitPolicySERDATA from $ActiveNetworkStatusTable inner join $ActiveDescriptorTable on $ActiveNetworkStatusTable.Fingerprint = $ActiveDescriptorTable.Fingerprint where $ActiveNetworkStatusTable.IP = '$RemoteIP'";
+	$query = "select $ActiveNetworkStatusTable.Name Name, $ActiveNetworkStatusTable.Fingerprint Fingerprint, $ActiveDescriptorTable.ExitPolicySERDATA ExitPolicySERDATA
+		from $ActiveNetworkStatusTable
+			inner join $ActiveDescriptorTable on $ActiveNetworkStatusTable.Fingerprint = $ActiveDescriptorTable.Fingerprint
+			left join $ActiveORAddressesTable on $ActiveDescriptorTable.ID = $ActiveORAddressesTable.descriptor_id
+		where ($ActiveNetworkStatusTable.IP = '$RemoteIP' or $ActiveORAddressesTable.address = '$RemoteIP')
+		group by Name, Fingerprint, ExitPolicySERDATA";
 	$result = $mysqli->query($query);
 	if(!$result) {
 		die_503('Query failed: ' . $mysqli->error);
 	}
 
 	while ($record = $result->fetch_assoc())
-	{ 
+	{
 		$Count++;
 
 		$TorNodeName[$Count] = $record['Name'];
@@ -1512,11 +1510,14 @@ if ($PositiveMatch_IP == 1)
 
 			// Seperate parts of ExitPolicy line
 			list($Condition,$NetworkLine) = explode(' ', rtrim($ExitPolicyLine));
-			list($Subnet,$PortLine) = explode(':', $NetworkLine);
+			$matches = array();
+			preg_match('/(.*):([^:]*)$/', $NetworkLine, $matches);
+			$Subnet = trim($matches[1], '[]');
+			$PortLine = $matches[2];
 			$Port = explode(',', $PortLine);
 
 			// Find out if IP client used to access this server is a match for the subnet specified on this ExitPolicy line
-			if (IsIPInSubnet($ServerIP,$Subnet) == 1)
+			if (IsIPInSubnet($ServerIP,$Subnet))
 			{
 				// Determine if port is also a match
 				foreach($Port as $CurrentPortExpression)
@@ -1524,12 +1525,12 @@ if ($PositiveMatch_IP == 1)
 					// Handle condition where port is a '*' character (Port always matches)
 					if ($CurrentPortExpression == '*')
 					{
-						if ($Condition == 'accept')
+						if ($Condition == 'accept' || $Condition == 'accept6')
 						{
 							$PositiveMatch_ExitPolicy[$Count] = 1;
 							break 2;
 						}
-						else if ($Condition == 'reject')
+						else if ($Condition == 'reject' || $Condition == 'reject6')
 						{
 							$PositiveMatch_ExitPolicy[$Count] = 0;
 							break 2;
@@ -1540,7 +1541,7 @@ if ($PositiveMatch_IP == 1)
 					if(strpos($CurrentPortExpression, '-') !== FALSE)
 					{
 						list($LowerPort,$UpperPort) = explode('-', $CurrentPortExpression);
-	
+
 						if (($ServerPort >= $LowerPort && $ServerPort <= $UpperPort) && ($Condition == 'accept'))
 						{
 							$PositiveMatch_ExitPolicy[$Count] = 1;
@@ -1556,7 +1557,7 @@ if ($PositiveMatch_IP == 1)
 							continue;
 						}
 					}
-	
+
 					// $CurrentPortExpression is a single port number
 					else
 					{
@@ -1589,128 +1590,35 @@ if ($PositiveMatch_IP == 1)
 
 // Get descriptor count
 $query = "select count(*) as Count from $ActiveDescriptorTable";
-$record = db_query_single_row($query);
+$record = db_query_single_row($query, 1800);
 
 $DescriptorCount = $record['Count'];
 
 // Prepare and execute master router query
 $query = "select $ActiveNetworkStatusTable.Name, $ActiveNetworkStatusTable.Fingerprint";
-
-if (in_array("CountryCode", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.CountryCode";
-}
-
-if (in_array("Bandwidth", $ColumnList_ACTIVE))
-{
-	$query .= ", floor($ActiveDescriptorTable.BandwidthOBSERVED / 1024) as Bandwidth";
-}
-
-if (in_array("Uptime", $ColumnList_ACTIVE))
-{
-	$query .= ", floor(((UNIX_TIMESTAMP() - (UNIX_TIMESTAMP($ActiveDescriptorTable.LastDescriptorPublished) + $OffsetFromGMT)) + CAST($ActiveDescriptorTable.Uptime AS DECIMAL)) / 3600) as Uptime";
-}
-
-if (in_array("LastDescriptorPublished", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveDescriptorTable.LastDescriptorPublished";
-}
-
-if (in_array("Hostname", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.Hostname";
-}
-
-if (in_array("IP", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.IP";
-}
-
-if (in_array("ORPort", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.ORPort";
-}
-
-if (in_array("DirPort", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.DirPort";
-}
-
-if (in_array("Platform", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveDescriptorTable.Platform";
-}
-
-if (in_array("Contact", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveDescriptorTable.Contact";
-}
-
-if (in_array("Authority", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FAuthority as Authority";
-}
-
-if (in_array("BadDir", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FBadDirectory as BadDir";
-}
-
-if (in_array("BadExit", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FBadExit as BadExit";
-}
-
-if (in_array("Exit", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FExit as 'Exit'";
-}
-
-if (in_array("Fast", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FFast as Fast";
-}
-
-if (in_array("Guard", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FGuard as Guard";
-}
-
-if (in_array("Hibernating", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveDescriptorTable.Hibernating as 'Hibernating'";
-}
-
-if (in_array("Named", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FNamed as Named";
-}
-
-if (in_array("Stable", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FStable as Stable";
-}
-
-if (in_array("Running", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FRunning as Running";
-}
-
-if (in_array("Valid", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FValid as Valid";
-}
-
-if (in_array("V2Dir", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FV2Dir as V2Dir";
-}
-
-if (in_array("HSDir", $ColumnList_ACTIVE))
-{
-	$query .= ", $ActiveNetworkStatusTable.FHSDir as HSDir";
-}
-
+$query .= ", $ActiveNetworkStatusTable.CountryCode";
+$query .= ", floor($ActiveDescriptorTable.BandwidthOBSERVED / 1024) as Bandwidth";
+$query .= ", floor(((UNIX_TIMESTAMP() - (UNIX_TIMESTAMP($ActiveDescriptorTable.LastDescriptorPublished) + $OffsetFromGMT)) + CAST($ActiveDescriptorTable.Uptime AS DECIMAL)) / 3600) as Uptime";
+$query .= ", $ActiveDescriptorTable.LastDescriptorPublished";
+$query .= ", $ActiveNetworkStatusTable.Hostname";
+$query .= ", $ActiveNetworkStatusTable.IP";
+$query .= ", $ActiveNetworkStatusTable.ORPort";
+$query .= ", $ActiveNetworkStatusTable.DirPort";
+$query .= ", $ActiveDescriptorTable.Platform";
+$query .= ", $ActiveDescriptorTable.Contact";
+$query .= ", $ActiveNetworkStatusTable.FAuthority as Authority";
+$query .= ", $ActiveNetworkStatusTable.FBadDirectory as BadDir";
+$query .= ", $ActiveNetworkStatusTable.FBadExit as BadExit";
+$query .= ", $ActiveNetworkStatusTable.FExit as 'Exit'";
+$query .= ", $ActiveNetworkStatusTable.FFast as Fast";
+$query .= ", $ActiveNetworkStatusTable.FGuard as Guard";
+$query .= ", $ActiveDescriptorTable.Hibernating as 'Hibernating'";
+$query .= ", $ActiveNetworkStatusTable.FNamed as Named";
+$query .= ", $ActiveNetworkStatusTable.FStable as Stable";
+$query .= ", $ActiveNetworkStatusTable.FRunning as Running";
+$query .= ", $ActiveNetworkStatusTable.FValid as Valid";
+$query .= ", $ActiveNetworkStatusTable.FV2Dir as V2Dir";
+$query .= ", $ActiveNetworkStatusTable.FHSDir as HSDir";
 $query .= ", INET_ATON($ActiveNetworkStatusTable.IP) as NIP from $ActiveNetworkStatusTable inner join $ActiveDescriptorTable on $ActiveNetworkStatusTable.Fingerprint = $ActiveDescriptorTable.Fingerprint";
 
 if ($FAuthority != 'OFF')
@@ -1876,7 +1784,7 @@ if ($CSInput != null)
 
 	if (strpos($query, "where") === false)
 	{
-		$QueryPrepend = " where "; 
+		$QueryPrepend = " where ";
 	}
 	else
 	{
@@ -1946,7 +1854,7 @@ if ($CSInput != null)
 	}
 	else if ($CSField == 'Bandwidth')
 	{
-		if(!(is_numeric($CSInput_SAFE))) 
+		if(!(is_numeric($CSInput_SAFE)))
 		{
 			$CSInput = 0;
 			$CSInput_SAFE = 0;
@@ -1971,7 +1879,7 @@ if ($CSInput != null)
 	}
 	else if ($CSField == 'Uptime')
 	{
-		if(!(is_numeric($CSInput_SAFE))) 
+		if(!(is_numeric($CSInput_SAFE)))
 		{
 			$CSInput = 0;
 			$CSInput_SAFE = 0;
@@ -2053,7 +1961,7 @@ if ($CSInput != null)
 	}
 	else if ($CSField == 'ORPort')
 	{
-		if(!(is_numeric($CSInput_SAFE))) 
+		if(!(is_numeric($CSInput_SAFE)))
 		{
 			$CSInput = 0;
 			$CSInput_SAFE = 0;
@@ -2078,7 +1986,7 @@ if ($CSInput != null)
 	}
 	else if ($CSField == 'DirPort')
 	{
-		if(!(is_numeric($CSInput_SAFE))) 
+		if(!(is_numeric($CSInput_SAFE)))
 		{
 			$CSInput = 0;
 			$CSInput_SAFE = 0;
@@ -2151,6 +2059,10 @@ else if ($SR == 'IP')
 {
 	$query = $query . " order by NIP " . $SO . ", Name Asc";
 }
+else if (in_array($SR, array('ID', 'Fingerprint', 'Name', 'LastDescriptorPublished', 'IP', 'ORPort', 'DirPort')))
+{
+	$query = $query . " order by $ActiveNetworkStatusTable.$SR $SO";
+}
 else
 {
 	$query = $query . " order by " . $SR . " " . $SO . ", Name Asc";
@@ -2163,7 +2075,11 @@ if(!$result) {
 
 fetch_mirrors();
 
-?><!DOCTYPE html 
+if(!$onion_service) {
+	header("onion-location: $Hidden_Service_URL");
+}
+
+?><!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
@@ -2181,7 +2097,7 @@ fetch_mirrors();
 <div class="topbar" id="topbar"><br/>
 <table width="100%"><tr><td style="vertical-align: bottom;">
 <a href="/?CSInput=" class="logoimage"><img src="img/logo.png" alt="TorStatus" class="topbarlogo"/></a>
-<span class="logotext"><?php echo $TorNetworkStatus_Version; ?><?php if ($UsingSSL == 1) { ?> - Encrypted connection<?php } elseif ($AllowSSL) { ?> - <a href="<?php echo $SSLLink  ?>" class="plain">Use an encrypted connection <b>(recommended)</b></a><?php } ?></span>
+<?php connection_information(); ?>
 </td><td style="vertical-align: bottom; text-align: right;">
 <form action="<?php echo $Self; ?>" method="post" name="search">
 <input type="hidden" name="CSMod" value="Contains" />
@@ -2210,7 +2126,6 @@ Good job, you do not have JavaScript enabled!
 </td></tr></table>
 </div>
 <div class="infobar" id="infobar">
-<?php if($DNSEL_Domain != null){echo '<a class="plain" href="dnsel_server.php">DNSEL Server</a> |';} ?>
 <a class="plain" href="tor_exit_query.php">Tor Exit Node Query</a> |
 <a class='plain' href='#AppServer' onclick='javascript:asdToggle = 0;toggleASD();'>TorStatus Server Details</a> |
 <a class='plain' href='#TorServer' onclick='javascript:nsosToggle = 0;toggleNSOS();'>Opinion Source</a> |
@@ -2256,26 +2171,26 @@ Good job, you do not have JavaScript enabled!
 
 <?php
 
-if(!(false === strpos($Hidden_Service_URL, $Host)))
+if($onion_service)
 {
-	echo '<tr><td class="tab"><img src="/img/usingtor.png" alt="You are using Tor" /></td><td class="content">';
-	echo '<span class="usingTor">You appear to be accessing this server through the Tor network as a hidden service.</span>';
+	echo '<tr><td class="tab"><img src="/img/usingtor.png" alt="You are using Tor" /></td><td class="content" style="text-align: center">';
+	echo '<span class="usingTor">You appear to be accessing this server through the Tor network as an Onion service.</span>';
 	echo '</td></tr>';
 }
 else if ($PositiveMatch_IP == 1)
 {
-	echo '<tr><td class="tab"><img src="/img/usingtor.png" alt="You are using Tor" /></td><td class="content">';
+	echo '<tr><td class="tab"><img src="/img/usingtor.png" alt="You are using Tor" /></td><td class="content" style="text-align: center">';
 	echo "<span class='usingTor'>It appears that you are using the Tor network</span><br/>Your OR is: $RemoteIP<br/>";
 	for($i=1 ; $i < ($Count + 1) ; $i++)
 	{
 		echo "Server name: <a class='tab' href='router_detail.php?FP=$TorNodeFP[$i]'>$TorNodeName[$i]</a><br/>";
 		if ($PositiveMatch_ExitPolicy[$i] == 1)
 		{
-			//echo "<span class='usingTor'>-This Tor server would allow exiting to this page-</span>";
+			echo "<span class='usingTor'>This Tor server would allow exiting to this page</span><br />";
 		}
 		else if ($PositiveMatch_ExitPolicy[$i] == 0)
 		{
-			echo "<span class='notUsingTor'>-This Tor server would NOT allow exiting to this page-</span>";
+			echo "<span class='notUsingTor'>This Tor server would NOT allow exiting to this page</span><br />";
 		}
 	}
 	echo '</td></tr>';
@@ -2284,34 +2199,24 @@ else
 {
 	echo "<tr><td class='tab'>";
 	echo "<img alt='You are not using Tor' src='/img/notusingtor.png'/>";
-	echo "</td><td class='content'>";
+	echo "</td><td class='content' style='text-align: center;'>";
 	echo "<span class='notUsingTor'>You do not appear to be using Tor</span><br/>Your IP Address is: $RemoteIP";
 	echo "</td></tr>";
 }
 
-/*
 if($Hidden_Service_URL != null)
 {
 	echo "<tr>\n";
-	echo "<td class='TRC'></td><td><b>";
-	echo "<font color='#3344ee'>This site is available as a Tor Hidden Service at:</font><br/><a class='plain' href='$Hidden_Service_URL'>$Hidden_Service_URL</a><br/><br/>";
-	echo "</b></td>\n";
+	echo "<td colspan='2' style='border-top: solid 1px black; text-align: center;'><br />";
+	echo "<font color='#3344ee'>This site is available as an Onion V3 Service at:</font><br/><a style='text-decoration: underline; color: #3344ee;' href='$Hidden_Service_URL'>$Hidden_Service_URL</a><br/><br/>";
+	echo "</td>\n";
 	echo "</tr>\n";
 }
- */
 ?>
 
 </table>
 
 </div></div></div>
-
-<div style="text-align: center; width: 100%;"><a href="http://jlve2y45zacpbz6s.onion" style="text-decoration: underline; color: blue;">Access via hidden service</a></div>
-<!-- <div style="text-align: center; width: 100%;"><a href="stats" style="text-decoration: underline; color: blue;">Access statistics for tor.rueckgr.at by country/city</a></div> -->
-<div style="text-align: center; width: 100%;">
-<!-- <a href="onionoo" style="text-decoration: underline; color: blue;">Onionoo</a> -->
-<!-- <a href="atlas" style="text-decoration: underline; color: blue;">Atlas</a> -->
-<!-- <a href="compass" style="text-decoration: underline; color: blue;">Compass</a> -->
-</div>
 
 <table cellspacing="2" cellpadding="2" class="body">
 
@@ -2331,13 +2236,13 @@ GenerateHeaderRow();
 echo $HeaderRowString;
 
 // Loop through and display all routers returned by query
-while ($record = $result->fetch_assoc()) 
+while ($record = $result->fetch_assoc())
 {
 
 	if ($RowCounter < $ColumnHeaderInterval)
 	{
 		// Display router row
-		DisplayRouterRow();	
+		DisplayRouterRow();
 
 		$CurrentResultSet++;
 		$RowCounter++;
@@ -2346,10 +2251,10 @@ while ($record = $result->fetch_assoc())
 	{
 		// Display header row
 		echo $HeaderRowString;
-	
+
 		// Display router row
 		DisplayRouterRow();
-	
+
 		$CurrentResultSet++;
 		$RowCounter = 1;
 	}
@@ -2395,7 +2300,7 @@ $query = "select
 	(select count(*) from $ActiveNetworkStatusTable where FHSDir = '1') as 'HSDir',
 	(select count(*) from $ActiveNetworkStatusTable where DirPort > 0) as 'DirMirror'";
 
-$record = db_query_single_row($query);
+$record = db_query_single_row($query, 1800);
 
 // Display total number of routers
 if ($RouterCount != 0)
@@ -2529,7 +2434,7 @@ function toggleANSS()
 	{
 		document.getElementById('anssTable').style.display='none';
 		document.getElementById('anssTableLink').innerHTML='Show Aggregate Network Statistic Summary  <img src="img/blackinfobarexpand.png" class="infobarbutton"/>';
-		anssToggle = 0;	
+		anssToggle = 0;
 	}
 }
 // -->
@@ -2551,19 +2456,25 @@ function toggleANSS()
 <td class='TRSB'>
 <?php
 
-echo "<b>Nickname:</b><br/><a class='plainbox' href='router_detail.php?FP=$Fingerprint'>" . $Name . "</a><br/>\n";
-echo "<b>Fingerprint:</b><br/>" . chunk_split(strtoupper($Fingerprint), 4, " ") . "<br/>\n";
-echo "<b>Country Code:</b><br/>"; if($CountryCode == null){echo "Unknown";}else{echo $CountryCode;} echo "<br/>\n";
-echo "<b>Contact:</b><br/>"; if($Contact == null){echo "None Given";} else{$Contact = htmlspecialchars($Contact, ENT_QUOTES); echo "$Contact";} echo "<br/>\n";
-echo "<b>Platform:</b><br/>" . $Platform . "<br/>\n";
-echo "<b>IP Address:</b><br/>" . $IP . "<br/>\n";
-echo "<b>Hostname:</b><br/>"; if ($IP == $Hostname){echo "Unavailable";} else{echo "$Hostname";} echo "<br/>\n";
-echo "<b>Onion Router Port:</b><br/>" . $ORPort . "<br/>\n";
-echo "<b>Directory Server Port:</b><br/>"; if($DirPort == 0){echo "None";} else {echo $DirPort;} echo "<br/>\n";
-echo "<b>Last Published Descriptor (GMT):</b><br/>" . $LastDescriptorPublished . "<br/><br/>\n";
-echo "<b>Onion Key:</b><pre>" . $OnionKey . "</pre>\n";
-echo "<b>Signing Key:</b><pre>" . $SigningKey . "</pre>\n";
-echo "<b>Descriptor Signature:</b><pre>" . $DescriptorSignature . "</pre>\n";
+if($Fingerprint)
+{
+	echo "<b>Nickname:</b><br/><a class='plainbox' href='router_detail.php?FP=$Fingerprint'>" . $Name . "</a><br/>\n";
+	echo "<b>Fingerprint:</b><br/>" . chunk_split(strtoupper($Fingerprint), 4, " ") . "<br/>\n";
+	echo "<b>Country Code:</b><br/>"; if($CountryCode == null){echo "Unknown";}else{echo $CountryCode;} echo "<br/>\n";
+	echo "<b>Contact:</b><br/>"; if($Contact == null){echo "None Given";} else{$Contact = htmlspecialchars($Contact, ENT_QUOTES); echo "$Contact";} echo "<br/>\n";
+	echo "<b>Platform:</b><br/>" . $Platform . "<br/>\n";
+	echo "<b>IP Address:</b><br/>" . $IP . "<br/>\n";
+	echo "<b>Hostname:</b><br/>"; if ($IP == $Hostname){echo "Unavailable";} else{echo "$Hostname";} echo "<br/>\n";
+	echo "<b>Onion Router Port:</b><br/>" . $ORPort . "<br/>\n";
+	echo "<b>Directory Server Port:</b><br/>"; if($DirPort == 0){echo "None";} else {echo $DirPort;} echo "<br/>\n";
+	echo "<b>Last Published Descriptor (GMT):</b><br/>" . $LastDescriptorPublished . "<br/><br/>\n";
+	echo "<b>Onion Key:</b><pre>" . $OnionKey . "</pre>\n";
+	echo "<b>Signing Key:</b><pre>" . $SigningKey . "</pre>\n";
+	echo "<b>Descriptor Signature:</b><pre>" . $DescriptorSignature . "</pre>\n";
+}
+else {
+	echo "Data source is a client, not a relay, therefore no detailled information is available";
+}
 ?>
 </td>
 </tr>
@@ -2585,7 +2496,7 @@ function toggleNSOS()
 	{
 		document.getElementById('nsosTable').style.display='none';
 		document.getElementById('nsosTableLink').innerHTML='Show Network Status Opinion Source  <img src="img/blackinfobarexpand.png" class="infobarbutton"/>';
-		nsosToggle = 0;	
+		nsosToggle = 0;
 	}
 }
 // -->
@@ -2798,7 +2709,7 @@ function toggleCAQO()
 	{
 		document.getElementById('caqoTable').style.display='none';
 		document.getElementById('caqoTableLink').innerHTML='Show Custom / Advanced Query Options  <img src="img/blackinfobarexpand.png" class="infobarbutton"/>';
-		caqoToggle = 0;	
+		caqoToggle = 0;
 	}
 }
 // -->
@@ -2835,7 +2746,7 @@ function toggleLGND()
 	{
 		document.getElementById('lgndTable').style.display='none';
 		document.getElementById('lgndTableLink').innerHTML='Show Table Legend  <img src="img/blackinfobarexpand.png" class="infobarbutton"/>';
-		lgndToggle = 0;	
+		lgndToggle = 0;
 	}
 }
 // -->
@@ -2908,7 +2819,7 @@ function toggleASD()
 	{
 		document.getElementById('asdTable').style.display='none';
 		document.getElementById('asdTableLink').innerHTML='Show Application Server Details  <img src="img/blackinfobarexpand.png" class="infobarbutton"/>';
-		asdToggle = 0;	
+		asdToggle = 0;
 	}
 }
 // -->
@@ -2932,9 +2843,9 @@ function toggleASD()
 $mysqli->close();
 
 // Register session variable to mark that this page has been loaded
-if (!isset($_SESSION['IndexVisited'])) 
+if (!isset($_SESSION['IndexVisited']))
 {
 	$_SESSION['IndexVisited'] = 1;
-} 
+}
 
 ?>

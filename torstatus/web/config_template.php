@@ -22,7 +22,7 @@ $LocalTorServerPassword = null;
 
 $UsingSquid = 0;
 $RealServerIP = "1.2.3.4";
-$DetermineUsingSSL = 1; // Set this to 0 if you do not want to try to
+$DetermineUsingSSL = 1; // Set this to 0 if you do not want to try to 
                         // detect whether or not SSL is being used
 $UsingSSL = 0;
 $SSLUsingSquid = 0;
@@ -119,7 +119,6 @@ $ColumnList_INACTIVE_DEFAULT = array
 $LocalTimeZone = "GMT";
 $OffsetFromGMT = 0;
 
-$DNSEL_Domain = null;
 $Hidden_Service_URL = null;
 
 // See if WHOIS wants the footer
